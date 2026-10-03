@@ -8,6 +8,13 @@
   const cardModal = new bootstrap.Modal(document.querySelector("#donorCardModal"));
   let submittedDonor = null;
 
+  const adminLink = document.querySelector("#adminLink");
+  const appScriptEndpoint = window.LIFELINK_CONFIG?.googleSheetsEndpoint?.trim();
+  if (adminLink && appScriptEndpoint) {
+    adminLink.href = appScriptEndpoint + (appScriptEndpoint.includes("?") ? "&" : "?") + "page=admin";
+    adminLink.classList.remove("d-none");
+  }
+
   const closeWelcome = () => {
     welcomeModal.hide();
     try { localStorage.setItem("lifelinkWelcomeSeen", "yes"); } catch {}
