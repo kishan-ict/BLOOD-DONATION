@@ -32,12 +32,14 @@
 
   form.addEventListener("submit", async event => {
     event.preventDefault();
-    const age = Number(document.querySelector("#age").value);
+    const dob = document.querySelector("#dob").value;
     if (!form.reportValidity()) return;
-    if (!Number.isFinite(age) || age < 18) {
-      document.querySelector("#age").setCustomValidity("You must be at least 18 years old to register.");
-      document.querySelector("#age").reportValidity();
-      document.querySelector("#age").setCustomValidity("");
+    const age = calculateAge(dob);
+    if (!Number.isInteger(age) || age < 18 || age > 100) {
+      const dobInput = document.querySelector("#dob");
+      dobInput.setCustomValidity("You must be at least 18 years old to register.");
+      dobInput.reportValidity();
+      dobInput.setCustomValidity("");
       return;
     }
     const data = new FormData(form);
@@ -46,6 +48,7 @@
       phone: String(data.get("phone")).trim(),
       address: String(data.get("address")).trim(),
       age,
+      dob,
       knowsBloodGroup: data.get("knowsBloodGroup") === "yes",
       bloodGroup: data.get("knowsBloodGroup") === "yes" ? String(data.get("bloodGroup")) : "Not known — check at donation location",
       consent: document.querySelector("#consent").checked
@@ -77,6 +80,7 @@
             phone: submittedDonor.phone,
             address: submittedDonor.address,
             age: submittedDonor.age,
+            dob: submittedDonor.dob,
             knowsBloodGroup: submittedDonor.knowsBloodGroup,
             bloodGroup: submittedDonor.knowsBloodGroup ? submittedDonor.bloodGroup.replace("−", "-") : "",
             consent: submittedDonor.consent,
@@ -93,7 +97,7 @@
     document.querySelector("#donorCard").innerHTML = `
       <div class="donor-card-head"><span class="donor-card-title">LIFELINK · DONOR INTEREST CARD</span><span class="donor-card-mark">✚</span></div>
       <div class="donor-card-name">${escapeHtml(submittedDonor.name)}</div><div class="donor-card-id">REGISTRATION ID · ${id}</div>
-      <div class="donor-card-data"><div><small>Blood group</small><b>${escapeHtml(submittedDonor.bloodGroup)}</b></div><div><small>Age</small><b>${submittedDonor.age}</b></div><div><small>Phone</small><b>${escapeHtml(submittedDonor.phone)}</b></div><div><small>Address / area</small><b>${escapeHtml(submittedDonor.address)}</b></div></div>
+      <div class="donor-card-data"><div><small>Blood group</small><b>${escapeHtml(submittedDonor.bloodGroup)}</b></div><div><small>Age · DOB</small><b>${submittedDonor.age} · ${escapeHtml(submittedDonor.dob)}</b></div><div><small>Phone</small><b>${escapeHtml(submittedDonor.phone)}</b></div><div><small>Address / area</small><b>${escapeHtml(submittedDonor.address)}</b></div></div>
       <div class="donor-card-foot">Interest registration only · Eligibility confirmed by centre staff</div>`;
     status.textContent = statusMessage;
     form.reset();
@@ -102,6 +106,15 @@
     submitButton.innerHTML = originalButtonText;
     cardModal.show();
   });
+
+  function calculateAge(value) {
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return NaN;
+    const [year, month, day] = value.split("-").map(Number);
+    const today = new Date();
+    let age = today.getFullYear() - year;
+    if (today.getMonth() + 1 < month || (today.getMonth() + 1 === month && today.getDate() < day)) age--;
+    return age;
+  }
 
   function escapeHtml(value) {
     return value.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
