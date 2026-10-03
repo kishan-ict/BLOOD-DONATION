@@ -1,3 +1,58 @@
+
+function doGet(e) {
+  const page = e && e.parameter ? e.parameter.page : '';
+  if (page === 'admin') {
+    return HtmlService.createHtmlOutputFromFile('Admin')
+      .setTitle('LifeLink Donor Admin');
+  }
+  return HtmlService.createHtmlOutput('LifeLink submission service is ready.');
+}
+
+function adminLogin(password) {
+  const expected = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD');
+  if (!expected) {
+    return { ok: false, message: 'Admin password is not configured in Apps Script project properties.' };
+  }
+
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(5000);
+    const cache = CacheService.getScriptCache();
+    const minuteKey = 'admin_login_attempts_' + Math.floor(Date.now() / 60000);
+    const attempts = Number(cache.get(minuteKey) || 0);
+    if (attempts >= 10) {
+      return { ok: false, message: 'Too many sign-in attempts. Wait a minute and try again.' };
+    }
+    cache.put(minuteKey, String(attempts + 1), 90);
+  } finally {
+    if (lock.hasLock()) lock.releaseLock();
+  }
+
+  if (String(password || '') !== expected) {
+    return { ok: false, message: 'Incorrect password.' };
+  }
+  const token = Utilities.getUuid() + Utilities.getUuid();
+  CacheService.getScriptCache().put('admin_session_' + token, 'valid', 1800);
+  return { ok: true, token: token };
+}
+
+function getDonorRegistrations(token) {
+  if (!token || CacheService.getScriptCache().get('admin_session_' + token) !== 'valid') {
+    return { ok: false, reauth: true, message: 'Your session expired. Please sign in again.' };
+  }
+  try {
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+    if (!sheet) throw new Error('Donor Registrations tab not found.');
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return { ok: true, rows: [] };
+    const rows = sheet.getRange(2, 1, lastRow - 1, 9).getDisplayValues();
+    return { ok: true, rows: rows.reverse() };
+  } catch (error) {
+    console.error(error);
+    return { ok: false, message: 'Could not read donor records.' };
+  }
+}
+
 const SPREADSHEET_ID = '1DG0suFdcrkg0OvDNtCsWg-3EM7pui2_OneiUc8W1s8Y';
 const SHEET_NAME = 'Donor Registrations';
 const MAX_SUBMISSIONS_PER_MINUTE = 30;
