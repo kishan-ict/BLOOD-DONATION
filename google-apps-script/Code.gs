@@ -127,7 +127,7 @@ function doPost(e) {
 }
 
 function calculateAge_(dob) {
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(dob)) return NaN;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return NaN;
   const parts = dob.split('-').map(Number);
   const birthDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
   if (birthDate.getUTCFullYear() !== parts[0] || birthDate.getUTCMonth() !== parts[1] - 1 || birthDate.getUTCDate() !== parts[2]) return NaN;
