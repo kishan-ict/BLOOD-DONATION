@@ -1,36 +1,21 @@
 # LifeLink — Blood Donation Project
 
-A responsive HTML5, CSS, Bootstrap, and JavaScript prototype for a blood donation project.
+A responsive blood donation interest-registration prototype built with HTML5, CSS, Bootstrap, and JavaScript.
 
 ## Features
 
 - First-visit welcome letter with continue, skip, and close actions.
-- Home page with sample hospital listings.
-- Donor registration requiring name, address, blood group knowledge, age (18+), phone, and contact consent.
-- Blood group selector appears only when the donor answers “Yes”; “No” explains that staff can check at the donation location.
-- Submission creates an in-browser donor interest card that can be downloaded or shared where the browser supports file sharing.
-- Project timeline and 60-mark evaluation rubric.
+- Home page with clearly marked sample hospitals.
+- Required donor form with an 18+ age rule and conditional blood group selection.
+- Downloadable and shareable donor interest card.
+- Optional Google Sheets submission endpoint; setup instructions are in [GOOGLE_SHEETS_SETUP.md](GOOGLE_SHEETS_SETUP.md).
 
 ## Run locally
 
-Open `index.html` in a browser, or serve the folder with any static web server. Bootstrap and the card-image libraries load from CDNs, so an internet connection is needed for those assets.
+Open `index.html` or serve this folder with a static web server. Bootstrap and the card-image library load from CDNs and require an internet connection.
 
-## Important prototype limits
+## Data handling
 
-This is a front-end demonstration. Submissions are not transmitted, stored on a server, or sent to a hospital or project team. The “you will get a call” message describes the intended workflow, but a real call requires secure backend storage and an authorized team member to contact the donor. Replace the sample hospital names with verified partners. Donation eligibility and appointment decisions must be handled by qualified donation-centre staff. Avoid collecting real donor data in this demo.
+Until an Apps Script web app URL is set in `config.js`, the form does not save or send donor data. Once configured, the script appends submissions to the private [LifeLink Donor Registrations Sheet](https://docs.google.com/spreadsheets/d/1DG0suFdcrkg0OvDNtCsWg-3EM7pui2_OneiUc8W1s8Y/edit). The website cannot verify the response body from Apps Script, so check that each row appears in the Sheet. Keep the Sheet private; do not collect real donor data without consent. The form is not a medical eligibility or appointment system.
 
-## Project schedule
-
-- Before 30 September: finalize the project.
-- 1–10 October: begin work, create the GitHub repository, invite collaborators, and target more than 20 meaningful commits per member.
-- 11–20 October: complete functionality, coding, and structure.
-- 21–30 October: submit through Google Drive, prepare the source ZIP and presentation, share the GitHub link, and prepare for the final exam.
-
-## Evaluation rubric (60 marks)
-
-- Functionality: 10 (including 2 marks for AI)
-- GitHub and collaboration: 10
-- Innovation: 10 (problem and solution)
-- Deployment: 10 (GitHub Pages, Netlify, or Cloudflare)
-- Teamwork: 10 (work distribution)
-- Documentation and presentation: 10
+Sample hospital names must be replaced with confirmed partners. Donation eligibility and appointment decisions belong to qualified donation-centre staff.
