@@ -51,7 +51,7 @@
       </div>
       <div id="loadMessage" class="message" role="status"></div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Registration ID</th><th>Submitted (UTC)</th><th>Full name</th><th>Phone</th><th>Address / area</th><th>Knows group</th><th>Blood group</th><th>Age</th><th>Consent</th></tr></thead>
+        <thead><tr><th>Registration ID</th><th>Submitted (UTC)</th><th>Full name</th><th>Phone</th><th>Address / area</th><th>Knows group</th><th>Blood group</th><th>Age</th><th>Consent</th><th>Date of birth</th></tr></thead>
         <tbody id="donorRows"></tbody>
       </table></div>
       <p class="muted">Use donor information only for the stated coordination purpose. Confirm eligibility and appointments with qualified donation-centre staff.</p>
@@ -134,7 +134,7 @@
       if (!matches.length && donorRecords.length) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = 9;
+        td.colSpan = 10;
         td.textContent = "No matching donor records.";
         tr.appendChild(td);
         body.appendChild(tr);
