@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#a20d2b">
+  <title>Donor Admin · LifeLink</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .admin-shell{min-height:calc(100vh - 80px);background:#faf7f5;padding:42px 0 56px}
+    .admin-intro{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:22px}
+    .admin-intro h1{font:800 clamp(2rem,4vw,3rem) Manrope,sans-serif;letter-spacing:-.06em;margin:8px 0}
+    .admin-intro p{max-width:620px;margin:0;color:#777176}
+    .admin-frame-wrap{background:#fff;border:1px solid #eee7e5;border-radius:20px;overflow:hidden;box-shadow:0 16px 50px #35151b0c}
+    .admin-frame{display:block;width:100%;height:960px;border:0;background:#f8f5f4}
+    .admin-state{padding:30px;border-radius:16px;background:#fff;border:1px solid #eee7e5;color:#655a5c}
+    @media(max-width:767px){.admin-shell{padding:28px 0 40px}.admin-intro{align-items:flex-start;flex-direction:column}.admin-frame{height:82vh;min-height:700px}}
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="navbar navbar-expand-lg container py-3">
+      <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="index.html"><span class="brand-mark">✚</span> LifeLink</a>
+      <div class="ms-auto d-flex align-items-center gap-3">
+        <a class="nav-link" href="index.html">Back to site</a>
+        <span class="sample-pill">ADMIN</span>
+      </div>
+    </nav>
+  </header>
+  <main class="admin-shell">
+    <div class="container">
+      <div class="admin-intro">
+        <div><span class="eyebrow">Team workspace</span><h1>Donor registrations</h1><p>Sign in to review donor details, search registrations, refresh the list, and sign out securely.</p></div>
+        <a href="index.html#donate" class="btn btn-outline-dark rounded-pill px-4">Open donor form</a>
+      </div>
+      <div id="adminState" class="admin-state" role="status">Connecting to the protected admin dashboard…</div>
+      <div id="adminFrameWrap" class="admin-frame-wrap d-none">
+        <iframe id="adminFrame" class="admin-frame" title="LifeLink protected donor administration" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      </div>
+    </div>
+  </main>
+  <footer class="site-footer"><div class="container text-center"><b>LifeLink</b> · Private team workspace</div></footer>
+  <script src="config.js"></script>
+  <script>
+    const endpoint = window.LIFELINK_CONFIG?.googleSheetsEndpoint?.trim();
+    const state = document.getElementById("adminState");
+    if (endpoint) {
+      const separator = endpoint.includes("?") ? "&" : "?";
+      document.getElementById("adminFrame").src = endpoint + separator + "page=admin&embedded=1";
+      document.getElementById("adminFrameWrap").classList.remove("d-none");
+      state.classList.add("d-none");
+    } else {
+      state.textContent = "Google Sheets is not connected yet. Set the Apps Script /exec URL in config.js and redeploy GitHub Pages.";
+    }
+  </script>
+</body>
+</html>
