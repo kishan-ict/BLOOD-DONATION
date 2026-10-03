@@ -108,7 +108,7 @@
   });
 
   function calculateAge(value) {
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return NaN;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return NaN;
     const [year, month, day] = value.split("-").map(Number);
     const today = new Date();
     let age = today.getFullYear() - year;
