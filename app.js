@@ -23,7 +23,7 @@
   };
   form.querySelectorAll('input[name="knowsBloodGroup"]').forEach(input => input.addEventListener("change", updateBloodGroup));
 
-  form.addEventListener("submit", event => {
+  form.addEventListener("submit", async event => {
     event.preventDefault();
     const age = Number(document.querySelector("#age").value);
     if (!form.reportValidity()) return;
@@ -39,17 +39,60 @@
       phone: String(data.get("phone")).trim(),
       address: String(data.get("address")).trim(),
       age,
-      bloodGroup: data.get("knowsBloodGroup") === "yes" ? String(data.get("bloodGroup")) : "Not known — check at donation location"
+      knowsBloodGroup: data.get("knowsBloodGroup") === "yes",
+      bloodGroup: data.get("knowsBloodGroup") === "yes" ? String(data.get("bloodGroup")) : "Not known — check at donation location",
+      consent: document.querySelector("#consent").checked
     };
     if (!submittedDonor.name || !submittedDonor.phone || !submittedDonor.address) return;
+
     const id = "LL-" + new Date().getFullYear() + "-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton.innerHTML;
+    const status = document.querySelector("#sheetStatus");
+    submitButton.disabled = true;
+    submitButton.textContent = "Sending registration…";
+    status.className = "alert alert-warning mt-3 mb-0";
+    status.textContent = "Sending your registration to the project sheet…";
+
+    const endpoint = window.LIFELINK_CONFIG?.googleSheetsEndpoint?.trim();
+    let statusMessage;
+    if (!endpoint) {
+      statusMessage = "Not saved: the Google Sheets endpoint is not configured yet. This card is for demonstration only.";
+    } else {
+      try {
+        await fetch(endpoint, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            registrationId: id,
+            name: submittedDonor.name,
+            phone: submittedDonor.phone,
+            address: submittedDonor.address,
+            age: submittedDonor.age,
+            knowsBloodGroup: submittedDonor.knowsBloodGroup,
+            bloodGroup: submittedDonor.knowsBloodGroup ? submittedDonor.bloodGroup.replace("−", "-") : "",
+            consent: submittedDonor.consent,
+            website: String(data.get("website") || "")
+          })
+        });
+        statusMessage = "Request sent to the Google endpoint. This browser cannot confirm that the row was saved, so check the Sheet before relying on the registration.";
+      } catch (error) {
+        console.error("LifeLink Sheets submission failed:", error);
+        statusMessage = "Could not reach Google Sheets. Your registration was not confirmed; please try again later.";
+      }
+    }
+
     document.querySelector("#donorCard").innerHTML = `
       <div class="donor-card-head"><span class="donor-card-title">LIFELINK · DONOR INTEREST CARD</span><span class="donor-card-mark">✚</span></div>
       <div class="donor-card-name">${escapeHtml(submittedDonor.name)}</div><div class="donor-card-id">REGISTRATION ID · ${id}</div>
       <div class="donor-card-data"><div><small>Blood group</small><b>${escapeHtml(submittedDonor.bloodGroup)}</b></div><div><small>Age</small><b>${submittedDonor.age}</b></div><div><small>Phone</small><b>${escapeHtml(submittedDonor.phone)}</b></div><div><small>Address / area</small><b>${escapeHtml(submittedDonor.address)}</b></div></div>
-      <div class="donor-card-foot">Interest registration only · Donation eligibility confirmed by centre staff</div>`;
+      <div class="donor-card-foot">Interest registration only · Eligibility confirmed by centre staff</div>`;
+    status.textContent = statusMessage;
     form.reset();
     updateBloodGroup();
+    submitButton.disabled = false;
+    submitButton.innerHTML = originalButtonText;
     cardModal.show();
   });
 
