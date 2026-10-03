@@ -11,7 +11,7 @@
   const adminLink = document.querySelector("#adminLink");
   const appScriptEndpoint = window.LIFELINK_CONFIG?.googleSheetsEndpoint?.trim();
   if (adminLink && appScriptEndpoint) {
-    adminLink.href = "admin.html";
+    adminLink.href = appScriptEndpoint + (appScriptEndpoint.includes("?") ? "&" : "?") + "page=admin";
     adminLink.classList.remove("d-none");
   }
 
