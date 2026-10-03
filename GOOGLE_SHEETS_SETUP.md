@@ -13,6 +13,8 @@ The private donor sheet is ready: https://docs.google.com/spreadsheets/d/1DG0suF
 7. Paste that URL into `googleSheetsEndpoint` in `config.js`, commit and push to `main`. The Admin link appears after GitHub Pages redeploys.
 8. After each Apps Script code change, create a new deployment version (or edit the existing deployment) so the live web app uses the updated code.
 
+The script appends DOB in column J. Add `Date of birth (DOB)` as the header in cell J1 if your sheet does not already have that column.
+
 ## Admin page
 
 Use the **Admin** link on the site, or open the deployed web app URL with `?page=admin`. The admin dashboard asks for the password, then displays all saved donor details newest first. It includes search, refresh, and sign out. The password stays in Apps Script Script Properties; donor rows are returned only after server-side password verification and a short-lived session check.
