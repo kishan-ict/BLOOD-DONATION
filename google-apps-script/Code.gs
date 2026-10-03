@@ -45,7 +45,7 @@ function getDonorRegistrations(token) {
     if (!sheet) throw new Error('Donor Registrations tab not found.');
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return { ok: true, rows: [] };
-    const rows = sheet.getRange(2, 1, lastRow - 1, 9).getDisplayValues();
+    const rows = sheet.getRange(2, 1, lastRow - 1, 10).getDisplayValues();
     return { ok: true, rows: rows.reverse() };
   } catch (error) {
     console.error(error);
@@ -70,13 +70,15 @@ function doPost(e) {
     const name = clean_(payload.name, 80);
     const phone = clean_(payload.phone, 20);
     const address = clean_(payload.address, 240);
-    const age = Number(payload.age);
+    const dob = clean_(payload.dob, 10);
+    const age = calculateAge_(dob);
+    const submittedAge = Number(payload.age);
     const knowsBloodGroup = payload.knowsBloodGroup === true;
     const bloodGroup = knowsBloodGroup ? clean_(payload.bloodGroup, 3) : 'Not known';
     const consent = payload.consent === true;
     const registrationId = clean_(payload.registrationId, 24);
 
-    if (!name || !phone || !address || !consent || !Number.isInteger(age) || age < 18 || age > 100) {
+    if (!name || !phone || !address || !dob || !consent || !Number.isInteger(age) || age < 18 || age > 100 || submittedAge !== age) {
       return json_({ ok: false, error: 'Please provide valid required fields and confirm consent.' });
     }
     if (!/^[0-9+() .-]{7,20}$/.test(phone)) {
@@ -111,7 +113,8 @@ function doPost(e) {
       knowsBloodGroup ? 'Yes' : 'No',
       safeCell_(bloodGroup),
       age,
-      'Yes'
+      'Yes',
+      dob
     ]);
     cache.put(minuteKey, String(currentCount + 1), 90);
     return json_({ ok: true, registrationId: registrationId });
@@ -121,6 +124,17 @@ function doPost(e) {
   } finally {
     if (lock && lock.hasLock()) lock.releaseLock();
   }
+}
+
+function calculateAge_(dob) {
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(dob)) return NaN;
+  const parts = dob.split('-').map(Number);
+  const birthDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+  if (birthDate.getUTCFullYear() !== parts[0] || birthDate.getUTCMonth() !== parts[1] - 1 || birthDate.getUTCDate() !== parts[2]) return NaN;
+  const today = new Date();
+  let age = today.getUTCFullYear() - parts[0];
+  if (today.getUTCMonth() + 1 < parts[1] || (today.getUTCMonth() + 1 === parts[1] && today.getUTCDate() < parts[2])) age--;
+  return age;
 }
 
 function clean_(value, maxLength) {
