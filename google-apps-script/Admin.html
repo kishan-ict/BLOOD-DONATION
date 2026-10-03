@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LifeLink Admin</title>
+  <style>
+    :root{font-family:Arial,sans-serif;color:#251d20;background:#f8f5f4;--red:#a20d2b;--line:#eadfe1}
+    *{box-sizing:border-box}body{margin:0}.shell{max-width:1180px;margin:0 auto;padding:28px 18px 50px}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}
+    .brand{font-size:20px;font-weight:800}.brand b{color:var(--red);margin-right:8px}
+    .badge{font-size:12px;color:#796c70;background:#eee8e7;padding:8px 11px;border-radius:99px}
+    .panel{background:#fff;border:1px solid var(--line);border-radius:18px;padding:25px;box-shadow:0 10px 30px #31101a09}
+    #loginPanel{max-width:440px;margin:10vh auto}.eyebrow{color:var(--red);font-size:11px;letter-spacing:.13em;font-weight:800;text-transform:uppercase}
+    h1{font-size:28px;letter-spacing:-.04em;margin:9px 0}p{color:#71676a;line-height:1.6}
+    label{display:block;font-size:13px;font-weight:700;margin:18px 0 7px}input{width:100%;padding:13px;border:1px solid #dcd2d4;border-radius:10px;font-size:15px}
+    button{border:0;background:var(--red);color:#fff;border-radius:10px;padding:12px 18px;font-size:14px;font-weight:700;cursor:pointer}
+    button:disabled{opacity:.6;cursor:wait}.wide{width:100%;margin-top:15px}.toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:20px 0}
+    .toolbar input{max-width:440px}.actions{display:flex;gap:9px}.secondary{color:#42383b;background:#f1ebea;border:1px solid var(--line)}
+    .summary{display:flex;gap:10px;align-items:baseline;font-weight:700}.summary strong{font-size:26px;color:var(--red)}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+    table{width:100%;border-collapse:collapse;min-width:980px;font-size:13px}
+    th{background:#f6f1f0;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#665a5d;position:sticky;top:0}
+    th,td{padding:12px;border-bottom:1px solid #f0e9e8;vertical-align:top}
+    td{max-width:240px;overflow-wrap:anywhere}tbody tr:hover{background:#fffafa}
+    .message{font-size:13px;min-height:20px;margin:10px 0}.error{color:#a20d2b}.muted{color:#867b7d;font-size:12px}
+    .hidden{display:none!important}
+    @media(max-width:650px){.shell{padding:18px 12px 35px}.panel{padding:19px}.toolbar{align-items:stretch;flex-direction:column}.toolbar input{max-width:none}.actions{justify-content:flex-end}header{align-items:flex-start;gap:10px}.badge{font-size:10px}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header><div class="brand"><b>✚</b>LifeLink <span class="muted">ADMIN</span></div><span class="badge">Private donor records</span></header>
+    <section id="loginPanel" class="panel">
+      <span class="eyebrow">Authorized team only</span>
+      <h1>Admin sign in</h1>
+      <p>Enter the admin password to view donor registrations. Your password is checked by Apps Script and is not stored in this page.</p>
+      <form id="loginForm">
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+        <button class="wide" id="loginButton" type="submit">Open donor records</button>
+      </form>
+      <div id="loginMessage" class="message" role="status"></div>
+      <div class="muted">For donor privacy, sign out when you finish reviewing records.</div>
+    </section>
+    <section id="dashboard" class="panel hidden">
+      <div class="summary"><strong id="recordCount">0</strong><span>donor registrations</span></div>
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Search name, phone, area, blood group, or ID" aria-label="Search donor registrations">
+        <div class="actions"><button class="secondary" id="refreshButton" type="button">Refresh</button><button class="secondary" id="logoutButton" type="button">Sign out</button></div>
+      </div>
+      <div id="loadMessage" class="message" role="status"></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Registration ID</th><th>Submitted (UTC)</th><th>Full name</th><th>Phone</th><th>Address / area</th><th>Knows group</th><th>Blood group</th><th>Age</th><th>Consent</th></tr></thead>
+        <tbody id="donorRows"></tbody>
+      </table></div>
+      <p class="muted">Use donor information only for the stated coordination purpose. Confirm eligibility and appointments with qualified donation-centre staff.</p>
+    </section>
+  </div>
+  <script>
+    let sessionToken = "";
+    let donorRecords = [];
+    const loginPanel = document.getElementById("loginPanel");
+    const dashboard = document.getElementById("dashboard");
+    const loginMessage = document.getElementById("loginMessage");
+    const loadMessage = document.getElementById("loadMessage");
+
+    document.getElementById("loginForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const button = document.getElementById("loginButton");
+      const password = document.getElementById("password").value;
+      button.disabled = true;
+      loginMessage.textContent = "Checking password…";
+      loginMessage.className = "message";
+      google.script.run
+        .withSuccessHandler(result => {
+          button.disabled = false;
+          document.getElementById("password").value = "";
+          if (!result || !result.ok) {
+            loginMessage.textContent = result?.message || "Could not sign in.";
+            loginMessage.className = "message error";
+            return;
+          }
+          sessionToken = result.token;
+          loginPanel.classList.add("hidden");
+          dashboard.classList.remove("hidden");
+          loadRecords();
+        })
+        .withFailureHandler(() => {
+          button.disabled = false;
+          loginMessage.textContent = "Could not contact the admin service. Try again.";
+          loginMessage.className = "message error";
+        })
+        .adminLogin(password);
+    });
+
+    function loadRecords() {
+      loadMessage.textContent = "Loading donor records…";
+      loadMessage.className = "message";
+      google.script.run
+        .withSuccessHandler(result => {
+          if (!result || !result.ok) {
+            loadMessage.textContent = result?.message || "Could not load records. Sign in again.";
+            loadMessage.className = "message error";
+            if (result?.reauth) signOut();
+            return;
+          }
+          donorRecords = result.rows || [];
+          document.getElementById("recordCount").textContent = donorRecords.length;
+          loadMessage.textContent = donorRecords.length ? "" : "No donor registrations yet.";
+          renderRows();
+        })
+        .withFailureHandler(() => {
+          loadMessage.textContent = "Could not load records. Try refreshing.";
+          loadMessage.className = "message error";
+        })
+        .getDonorRegistrations(sessionToken);
+    }
+
+    function renderRows() {
+      const query = document.getElementById("search").value.trim().toLowerCase();
+      const body = document.getElementById("donorRows");
+      body.replaceChildren();
+      const matches = donorRecords.filter(row => row.join(" ").toLowerCase().includes(query));
+      for (const row of matches) {
+        const tr = document.createElement("tr");
+        for (const value of row) {
+          const td = document.createElement("td");
+          td.textContent = value == null ? "" : String(value);
+          tr.appendChild(td);
+        }
+        body.appendChild(tr);
+      }
+      if (!matches.length && donorRecords.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 9;
+        td.textContent = "No matching donor records.";
+        tr.appendChild(td);
+        body.appendChild(tr);
+      }
+    }
+
+    function signOut() {
+      sessionToken = "";
+      donorRecords = [];
+      dashboard.classList.add("hidden");
+      loginPanel.classList.remove("hidden");
+      document.getElementById("recordCount").textContent = "0";
+      document.getElementById("password").value = "";
+      document.getElementById("donorRows").replaceChildren();
+      loginMessage.textContent = "You have signed out.";
+      loginMessage.className = "message";
+    }
+
+    document.getElementById("search").addEventListener("input", renderRows);
+    document.getElementById("refreshButton").addEventListener("click", loadRecords);
+    document.getElementById("logoutButton").addEventListener("click", signOut);
+  </script>
+</body>
+</html>
